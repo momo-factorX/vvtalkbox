@@ -8,19 +8,19 @@ import SettingsDrawer from "./components/SettingsDrawer.vue";
 import HistoryArea from "./components/HistoryArea.vue";
 import InputArea from "./components/InputArea.vue";
 
-const { 
-    apiUrl, 
-    defaultSpeakerId, 
-    speedScale, 
-    pitchScale, 
-    isConnected, 
-    speakers, 
-    setApiUrl, 
-    setDefaultSpeakerId, 
-    setSpeedScale, 
-    setPitchScale, 
-    checkConnection, 
-    synthesize 
+const {
+    apiUrl,
+    defaultSpeakerId,
+    speedScale,
+    pitchScale,
+    isConnected,
+    speakers,
+    setApiUrl,
+    setDefaultSpeakerId,
+    setSpeedScale,
+    setPitchScale,
+    checkConnection,
+    synthesize,
 } = useVoicevox();
 
 const isSettingsOpen = ref(false);
@@ -59,7 +59,7 @@ const processQueue = async () => {
 
     const audioUrl = await synthesize(item.text, item.speakerId);
 
-    const index = history.value.findIndex(h => h.id === item.id);
+    const index = history.value.findIndex((h) => h.id === item.id);
     if (index !== -1) {
         if (audioUrl) {
             history.value[index].audioUrl = audioUrl;
@@ -83,7 +83,7 @@ const handleSend = async (text: string, speakerId: number) => {
     let speakerName = "Unknown";
 
     for (const s of speakers.value) {
-        const style = s.styles.find(st => st.id === speakerId);
+        const style = s.styles.find((st) => st.id === speakerId);
         if (style) {
             speakerName = `${s.name} (${style.name})`;
             break;
@@ -94,12 +94,12 @@ const handleSend = async (text: string, speakerId: number) => {
         id: nextId++,
         text,
         speakerId,
-        speakerName
+        speakerName,
     };
 
     history.value.push(item);
     queue.value.push(item);
-    
+
     historyAreaRef.value?.scrollToBottom();
     processQueue();
 };
@@ -108,9 +108,7 @@ const handleSend = async (text: string, speakerId: number) => {
 <template>
     <div :class="[$style.appContainer, { [$style.errorBackground]: !isConnected }]">
         <transition name="fade">
-            <div v-if="!isConnected" :class="$style.toast">
-                VOICEVOX サーバーに接続できません ({{ apiUrl }})
-            </div>
+            <div v-if="!isConnected" :class="$style.toast">VOICEVOX サーバーに接続できません ({{ apiUrl }})</div>
         </transition>
 
         <button :class="$style.fab" @click="isSettingsOpen = true" title="設定">
@@ -127,11 +125,7 @@ const handleSend = async (text: string, speakerId: number) => {
             @save="handleSaveSettings"
         />
 
-        <HistoryArea
-            ref="historyAreaRef"
-            :history="history"
-            @audio-ended="handleAudioEnded"
-        />
+        <HistoryArea ref="historyAreaRef" :history="history" @audio-ended="handleAudioEnded" />
 
         <InputArea
             :isConnected="isConnected"
@@ -168,7 +162,7 @@ const handleSend = async (text: string, speakerId: number) => {
     color: var(--color-on-error);
     padding: 10px 20px;
     border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     z-index: 100;
     font-size: 0.9rem;
     font-weight: bold;
@@ -183,7 +177,7 @@ const handleSend = async (text: string, speakerId: number) => {
     border-radius: 50%;
     background-color: var(--color-surface);
     border: 1px solid var(--color-border-light-2);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -271,7 +265,8 @@ const handleSend = async (text: string, speakerId: number) => {
 }
 
 /* Reset container styling inherited from original setup */
-body, html {
+body,
+html {
     margin: 0;
     padding: 0;
     width: 100%;

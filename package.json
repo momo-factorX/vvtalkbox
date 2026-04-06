@@ -7,7 +7,8 @@
     "build:ui": "vue-tsc --noEmit && vite build",
     "build:app": "cd src-felty && cargo build --release",
     "build": "pnpm run build:ui && pnpm run build:app",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier --write src/"
   },
   "dependencies": {
     "lucide-vue-next": "^1.0.0",
@@ -15,6 +16,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.5",
+    "prettier": "^3.8.1",
     "typescript": "~6.0.2",
     "vite": "^8.0.3",
     "vue-tsc": "^3.2.6"

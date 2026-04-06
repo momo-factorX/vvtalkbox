@@ -10,21 +10,24 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: 'send', text: string, speakerId: number): void;
+    (e: "send", text: string, speakerId: number): void;
 }>();
 
 const selectedSpeaker = ref<number>(props.defaultSpeakerId);
 const inputText = ref("");
 
-watch(() => props.defaultSpeakerId, (newId) => {
-    selectedSpeaker.value = newId;
-});
+watch(
+    () => props.defaultSpeakerId,
+    (newId) => {
+        selectedSpeaker.value = newId;
+    },
+);
 
 const handleSend = () => {
     const text = inputText.value.trim();
     if (!text || !props.isConnected) return;
-    
-    emit('send', text, selectedSpeaker.value);
+
+    emit("send", text, selectedSpeaker.value);
     inputText.value = "";
 };
 
@@ -50,11 +53,11 @@ const handleKeydownEnter = (e: KeyboardEvent) => {
                 </optgroup>
             </select>
         </div>
-        <input 
-            v-model="inputText" 
-            type="text" 
-            :class="$style.textInputMain" 
-            placeholder="テキストを入力..." 
+        <input
+            v-model="inputText"
+            type="text"
+            :class="$style.textInputMain"
+            placeholder="テキストを入力..."
             @keydown.enter="handleKeydownEnter"
             :disabled="!isConnected"
         />
@@ -136,7 +139,9 @@ const handleKeydownEnter = (e: KeyboardEvent) => {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background-color 0.2s, opacity 0.2s;
+    transition:
+        background-color 0.2s,
+        opacity 0.2s;
 }
 
 .sendButton:hover:not(:disabled) {

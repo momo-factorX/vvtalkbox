@@ -21,7 +21,7 @@ const scrollToBottom = () => {
 };
 
 watch(() => props.history.length, scrollToBottom);
-watch(() => props.history.map(h => h.audioUrl), scrollToBottom, { deep: true });
+watch(() => props.history.map((h) => h.audioUrl), scrollToBottom, { deep: true });
 
 defineExpose({ scrollToBottom });
 </script>
@@ -29,12 +29,20 @@ defineExpose({ scrollToBottom });
 <template>
     <div :class="$style.historyArea" ref="historyAreaRef">
         <div v-if="history.length === 0" :class="$style.emptyMessage">
-            まだ履歴がありません。<br>下のテキストボックスから音声を合成してください。
+            まだ履歴がありません。<br />下のテキストボックスから音声を合成してください。
         </div>
         <div v-for="item in history" :key="item.id" :class="$style.historyItem">
-            <div :class="[$style.historyText, { [$style.queuedText]: !item.audioUrl && !item.error }]">{{ item.text }}</div>
+            <div :class="[$style.historyText, { [$style.queuedText]: !item.audioUrl && !item.error }]">
+                {{ item.text }}
+            </div>
             <div :class="$style.historyMeta">{{ item.speakerName }}</div>
-            <audio v-if="item.audioUrl" :src="item.audioUrl" controls autoplay @ended="$emit('audio-ended', item.id)"></audio>
+            <audio
+                v-if="item.audioUrl"
+                :src="item.audioUrl"
+                controls
+                autoplay
+                @ended="$emit('audio-ended', item.id)"
+            ></audio>
             <div v-if="item.error" :class="$style.errorText">{{ item.error }}</div>
         </div>
     </div>

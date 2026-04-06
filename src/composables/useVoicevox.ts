@@ -69,9 +69,12 @@ export function useVoicevox() {
 
         try {
             // NOTE: AudioQuery を作成
-            const queryRes = await fetch(`${apiUrl.value}/audio_query?text=${encodeURIComponent(text)}&speaker=${speakerId}`, {
-                method: "POST"
-            });
+            const queryRes = await fetch(
+                `${apiUrl.value}/audio_query?text=${encodeURIComponent(text)}&speaker=${speakerId}`,
+                {
+                    method: "POST",
+                },
+            );
             if (!queryRes.ok) return null;
             const queryJson = await queryRes.json();
             queryJson.speedScale = speedScale.value;
@@ -82,9 +85,9 @@ export function useVoicevox() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Accept": "audio/wav"
+                    Accept: "audio/wav",
                 },
-                body: JSON.stringify(queryJson)
+                body: JSON.stringify(queryJson),
             });
             if (!synthRes.ok) return null;
 
@@ -110,6 +113,6 @@ export function useVoicevox() {
         setSpeedScale,
         setPitchScale,
         checkConnection,
-        synthesize
+        synthesize,
     };
 }
