@@ -7,21 +7,27 @@ const props = defineProps<{
     isOpen: boolean;
     apiUrl: string;
     defaultSpeakerId: number;
+    speedScale: number;
+    pitchScale: number;
     speakers: Speaker[];
 }>();
 
 const emit = defineEmits<{
     (e: 'update:isOpen', value: boolean): void;
-    (e: 'save', config: { url: string; speakerId: number }): void;
+    (e: 'save', config: { url: string; speakerId: number; speedScale: number; pitchScale: number }): void;
 }>();
 
 const tempUrl = ref(props.apiUrl);
 const tempDefaultSpeakerId = ref<number>(props.defaultSpeakerId);
+const tempSpeedScale = ref<number>(props.speedScale);
+const tempPitchScale = ref<number>(props.pitchScale);
 
 watch(() => props.isOpen, (newVal) => {
     if (newVal) {
         tempUrl.value = props.apiUrl;
         tempDefaultSpeakerId.value = props.defaultSpeakerId;
+        tempSpeedScale.value = props.speedScale;
+        tempPitchScale.value = props.pitchScale;
     }
 });
 
@@ -30,12 +36,19 @@ const close = () => {
 };
 
 const save = () => {
-    emit('save', { url: tempUrl.value, speakerId: tempDefaultSpeakerId.value });
+    emit('save', { 
+        url: tempUrl.value, 
+        speakerId: tempDefaultSpeakerId.value,
+        speedScale: tempSpeedScale.value,
+        pitchScale: tempPitchScale.value
+    });
 };
 
 const resetToDefault = () => {
     tempUrl.value = "http://127.0.0.1:50021";
     tempDefaultSpeakerId.value = 3;
+    tempSpeedScale.value = 1.0;
+    tempPitchScale.value = 0.0;
 };
 </script>
 
@@ -64,6 +77,14 @@ const resetToDefault = () => {
                         </option>
                     </optgroup>
                 </select>
+            </div>
+            <div :class="$style.inputGroup">
+                <label>話速 ({{ tempSpeedScale }})</label>
+                <input v-model.number="tempSpeedScale" type="range" min="0.5" max="2.0" step="0.01" :class="$style.rangeInput" />
+            </div>
+            <div :class="$style.inputGroup">
+                <label>ピッチ ({{ tempPitchScale }})</label>
+                <input v-model.number="tempPitchScale" type="range" min="-0.15" max="0.15" step="0.01" :class="$style.rangeInput" />
             </div>
         </div>
         <div :class="$style.drawerFooter">
@@ -172,6 +193,12 @@ const resetToDefault = () => {
     color: var(--color-text-accent);
     background-color: transparent;
     backdrop-filter: blur(3px);
+}
+
+.rangeInput {
+    width: 100%;
+    margin-top: 5px;
+    cursor: pointer;
 }
 
 .accentBtn, .secondaryBtn {

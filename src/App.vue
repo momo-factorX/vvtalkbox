@@ -8,7 +8,20 @@ import SettingsDrawer from "./components/SettingsDrawer.vue";
 import HistoryArea from "./components/HistoryArea.vue";
 import InputArea from "./components/InputArea.vue";
 
-const { apiUrl, defaultSpeakerId, isConnected, speakers, setApiUrl, setDefaultSpeakerId, checkConnection, synthesize } = useVoicevox();
+const { 
+    apiUrl, 
+    defaultSpeakerId, 
+    speedScale, 
+    pitchScale, 
+    isConnected, 
+    speakers, 
+    setApiUrl, 
+    setDefaultSpeakerId, 
+    setSpeedScale, 
+    setPitchScale, 
+    checkConnection, 
+    synthesize 
+} = useVoicevox();
 
 const isSettingsOpen = ref(false);
 const isProcessing = ref(false);
@@ -24,9 +37,11 @@ onMounted(() => {
     setInterval(checkConnection, 5000);
 });
 
-const handleSaveSettings = (config: { url: string; speakerId: number }) => {
+const handleSaveSettings = (config: { url: string; speakerId: number; speedScale: number; pitchScale: number }) => {
     setApiUrl(config.url);
     setDefaultSpeakerId(config.speakerId);
+    setSpeedScale(config.speedScale);
+    setPitchScale(config.pitchScale);
     isSettingsOpen.value = false;
 };
 
@@ -106,6 +121,8 @@ const handleSend = async (text: string, speakerId: number) => {
             v-model:isOpen="isSettingsOpen"
             :apiUrl="apiUrl"
             :defaultSpeakerId="defaultSpeakerId"
+            :speedScale="speedScale"
+            :pitchScale="pitchScale"
             :speakers="speakers"
             @save="handleSaveSettings"
         />

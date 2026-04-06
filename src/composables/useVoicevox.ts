@@ -6,6 +6,8 @@ const audioCache = new Map<string, string>();
 export function useVoicevox() {
     const apiUrl = ref(localStorage.getItem("vv_api_url") || "http://127.0.0.1:50021");
     const defaultSpeakerId = ref<number>(parseInt(localStorage.getItem("vv_default_speaker_id") || "3", 10));
+    const speedScale = ref<number>(parseFloat(localStorage.getItem("vv_speed_scale") || "1.0"));
+    const pitchScale = ref<number>(parseFloat(localStorage.getItem("vv_pitch_scale") || "0.0"));
     const isConnected = ref(true);
     const speakers = ref<Speaker[]>([]);
 
@@ -49,8 +51,18 @@ export function useVoicevox() {
         localStorage.setItem("vv_default_speaker_id", id.toString());
     };
 
+    const setSpeedScale = (scale: number) => {
+        speedScale.value = scale;
+        localStorage.setItem("vv_speed_scale", scale.toString());
+    };
+
+    const setPitchScale = (scale: number) => {
+        pitchScale.value = scale;
+        localStorage.setItem("vv_pitch_scale", scale.toString());
+    };
+
     const synthesize = async (text: string, speakerId: number): Promise<string | null> => {
-        const cacheKey = `${speakerId}:${text}`;
+        const cacheKey = `${speakerId}:${speedScale.value}:${pitchScale.value}:${text}`;
         if (audioCache.has(cacheKey)) {
             return audioCache.get(cacheKey)!;
         }
@@ -62,6 +74,8 @@ export function useVoicevox() {
             });
             if (!queryRes.ok) return null;
             const queryJson = await queryRes.json();
+            queryJson.speedScale = speedScale.value;
+            queryJson.pitchScale = pitchScale.value;
 
             // NOTE: 音声合成
             const synthRes = await fetch(`${apiUrl.value}/synthesis?speaker=${speakerId}`, {
@@ -87,10 +101,14 @@ export function useVoicevox() {
     return {
         apiUrl,
         defaultSpeakerId,
+        speedScale,
+        pitchScale,
         isConnected,
         speakers,
         setApiUrl,
         setDefaultSpeakerId,
+        setSpeedScale,
+        setPitchScale,
         checkConnection,
         synthesize
     };
