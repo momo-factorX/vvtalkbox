@@ -1,0 +1,27 @@
+cargo-features = ["trim-paths"]
+
+[package]
+name = "vvtalkbox"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+tokio = { version = "1.44.2", features = ["macros", "rt-multi-thread"], default-features = false }
+axum = "0.7"
+tower-http = { version = "0.6", features = ["cors"] }
+log = "0.4.29"
+rust-embed = { version = "8.5", features = ["include-exclude"] }
+mime_guess = "2.0"
+felty = { git = "https://github.com/kotonone/felty.git", version = "0.1.0" }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"
+panic = "abort"
+strip = true
+trim-paths = true
+
+[build-dependencies]
+felty-build = { git = "https://github.com/kotonone/felty.git", version = "0.1.0" }

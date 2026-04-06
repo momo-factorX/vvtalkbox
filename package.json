@@ -1,22 +1,19 @@
 {
   "name": "vvtalkbox",
   "private": true,
-  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri"
+    "build:ui": "vue-tsc --noEmit && vite build",
+    "build:app": "cd src-felty && cargo build --release",
+    "build": "pnpm run build:ui && pnpm run build:app",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.10.1",
-    "@tauri-apps/plugin-opener": "^2.5.3",
     "lucide-vue-next": "^1.0.0",
     "vue": "^3.5.32"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.10.1",
     "@vitejs/plugin-vue": "^6.0.5",
     "typescript": "~6.0.2",
     "vite": "^8.0.3",

@@ -1,0 +1,13 @@
+[app]
+id = "com.momo-can-factory.famiv.vvtalk"
+name = "VVTalkBox"
+version = "0.1.0"
+author = "Momo"
+copyright = "Copyright © 2026 Momo All Rights Reserved."
+icon_path = "icons/icon.ico"
+
+[window]
+width = 800.0
+height = 300.0
+resizable = true
+maximizable = true
