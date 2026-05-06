@@ -10,11 +10,14 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: "send", text: string, speakerId: number): void;
+    (e: "send", text: string, speakerId: number, skipAudio?: boolean): void;
+    (e: "realtime-read", text: string, speakerId: number): void;
 }>();
 
 const selectedSpeaker = ref<number>(props.defaultSpeakerId);
 const inputText = ref("");
+const lastReadText = ref("");
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 watch(
     () => props.defaultSpeakerId,
@@ -23,12 +26,77 @@ watch(
     },
 );
 
+const flushRealtimeRead = (currentVal?: string, isForceRead: boolean = false) => {
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+    }
+
+    // NOTE: 処理対象のテキストを決定（引数がなければ現在の inputText）
+    const textToProcess = currentVal !== undefined ? currentVal : inputText.value;
+    // NOTE: 前回読み上げ済みのテキストと完全に一致する場合は何もしない
+    if (textToProcess === lastReadText.value) return;
+
+    let chunkToRead = "";
+
+    // NOTE: 今回のテキストが前回読み上げ済みのテキストから始まっている場合（純粋な追加）
+    if (textToProcess.startsWith(lastReadText.value)) {
+        // NOTE: 追加された差分を抽出
+        chunkToRead = textToProcess.slice(lastReadText.value.length);
+    } else {
+        // NOTE: 変換による置換やバックスペース等で前方一致しなくなった場合は共通のプレフィックスを探す
+        let i = 0;
+        const minLen = Math.min(lastReadText.value.length, textToProcess.length);
+        // NOTE: 先頭から1文字ずつ比較し、一致する文字数を特定（Longest Common Prefix）
+        while (i < minLen && lastReadText.value[i] === textToProcess[i]) {
+            i++;
+        }
+        // NOTE: 共通部分以降のテキストを差分として抽出
+        chunkToRead = textToProcess.slice(i);
+
+        if (chunkToRead.length === 0) {
+            // NOTE: 文字が削除されただけの場合は状態を同期して終了
+            lastReadText.value = textToProcess;
+            return;
+        }
+    }
+
+    // NOTE: 3文字より大きいか、あるいは変換確定(強制読み上げ)の場合は読み上げる
+    if (chunkToRead.length > 3 || isForceRead) {
+        emit("realtime-read", chunkToRead, selectedSpeaker.value);
+        // NOTE: 読み上げ済みテキストの状態を更新
+        lastReadText.value = textToProcess;
+    }
+};
+
+const handleInput = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    const val = target.value;
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        flushRealtimeRead(val, false);
+    }, 500); // 500msの入力休止でまとまった文字数(>3文字)を読む
+};
+
+const handleCompositionEnd = (e: CompositionEvent) => {
+    const target = e.target as HTMLInputElement;
+    // 変換確定時は短くても（アルファベットや数字等でも）即時読み上げる
+    flushRealtimeRead(target.value, true);
+};
+
 const handleSend = () => {
+    flushRealtimeRead(inputText.value, false);
+
     const text = inputText.value.trim();
     if (!text || !props.isConnected) return;
 
-    emit("send", text, selectedSpeaker.value);
+    // 全てがリアルタイムで読み上げ済みなら全体の再読み上げをスキップ
+    const skipAudio = text !== "" && text === lastReadText.value;
+
+    emit("send", text, selectedSpeaker.value, skipAudio);
+
     inputText.value = "";
+    lastReadText.value = "";
 };
 
 const handleKeydownEnter = (e: KeyboardEvent) => {
@@ -59,6 +127,8 @@ const handleKeydownEnter = (e: KeyboardEvent) => {
             :class="$style.textInputMain"
             placeholder="テキストを入力..."
             @keydown.enter="handleKeydownEnter"
+            @input="handleInput"
+            @compositionend="handleCompositionEnd"
             :disabled="!isConnected"
         />
         <button :class="$style.sendButton" @click="handleSend" :disabled="!inputText.trim() || !isConnected">

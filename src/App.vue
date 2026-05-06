@@ -30,6 +30,73 @@ const queue = ref<HistoryItem[]>([]);
 const history = ref<HistoryItem[]>([]);
 const historyAreaRef = ref<InstanceType<typeof HistoryArea> | null>(null);
 
+const realTimeQueue = ref<{ text: string; speakerId: number }[]>([]);
+const isRealTimePlaying = ref(false);
+const realTimeAudio = ref<HTMLAudioElement | null>(null);
+let realtimeGenerationId = 0;
+
+const processRealTimeQueue = async () => {
+    // NOTE: リアルタイム読み上げが既に実行中か、キューが空の場合は何もしない
+    if (isRealTimePlaying.value || realTimeQueue.value.length === 0) return;
+
+    isRealTimePlaying.value = true;
+    const item = realTimeQueue.value.shift()!;
+    // NOTE: キャンセル判定のために、リクエスト時点での世代IDを保持する
+    const currentGenId = realtimeGenerationId;
+
+    // NOTE: Voicevox サーバーへ音声合成をリクエスト
+    const audioUrl = await synthesize(item.text, item.speakerId);
+
+    // NOTE: 音声合成の待機中にキャンセル（世代IDの更新）が発生した場合は、再生せずに破棄する
+    if (currentGenId !== realtimeGenerationId) {
+        return;
+    }
+
+    if (audioUrl) {
+        // NOTE: 合成された音声 URL を用いて再生を開始
+        const audio = new Audio(audioUrl);
+        realTimeAudio.value = audio;
+        audio.onended = () => {
+            isRealTimePlaying.value = false;
+            realTimeAudio.value = null;
+            // NOTE: 現在の音声が終了したら、次のキューを再帰的に処理
+            processRealTimeQueue();
+        };
+        audio.onerror = () => {
+            isRealTimePlaying.value = false;
+            realTimeAudio.value = null;
+            processRealTimeQueue();
+        };
+        audio.play().catch(() => {
+            isRealTimePlaying.value = false;
+            realTimeAudio.value = null;
+            processRealTimeQueue();
+        });
+    } else {
+        isRealTimePlaying.value = false;
+        processRealTimeQueue();
+    }
+};
+
+const cancelRealtimeRead = () => {
+    // NOTE: 世代IDを更新し、通信中の音声合成リクエストが返ってきても無視するようにする
+    realtimeGenerationId++;
+    // NOTE: キューを空にして後続の読み上げ予定をクリア
+    realTimeQueue.value = [];
+    if (realTimeAudio.value) {
+        // NOTE: 再生中の HTMLAudioElement を強制停止
+        realTimeAudio.value.pause();
+        realTimeAudio.value.currentTime = 0;
+        realTimeAudio.value = null;
+    }
+    isRealTimePlaying.value = false;
+};
+
+const handleRealtimeRead = (text: string, speakerId: number) => {
+    realTimeQueue.value.push({ text, speakerId });
+    processRealTimeQueue();
+};
+
 let nextId = 1;
 
 onMounted(() => {
@@ -63,6 +130,10 @@ const processQueue = async () => {
     if (index !== -1) {
         if (audioUrl) {
             history.value[index].audioUrl = audioUrl;
+            if (item.autoplay === false) {
+                isPlaying.value = false;
+                processQueue();
+            }
         } else {
             history.value[index].error = "音声の合成に失敗しました";
             isPlaying.value = false;
@@ -79,7 +150,49 @@ const handleAudioEnded = (_id: number) => {
     processQueue();
 };
 
-const handleSend = async (text: string, speakerId: number) => {
+const handleSend = async (text: string, speakerId: number, skipAudioFlagFromInput?: boolean) => {
+    // NOTE: リアルタイム読み上げがまだ終わっていない（再生中・待機中）かどうかを判定
+    const wasRealTimeActive = isRealTimePlaying.value || realTimeQueue.value.length > 0;
+
+    let shouldCancelRealTime = false;
+
+    if (wasRealTimeActive) {
+        let remainingTime = Infinity;
+
+        // NOTE: キューが空（＝最後のチャンク）の場合のみ、残り時間を計算
+        if (realTimeQueue.value.length === 0) {
+            if (realTimeAudio.value) {
+                // NOTE: duration (総再生時間) と currentTime (現在の再生位置) から残り時間を算出
+                const duration = realTimeAudio.value.duration;
+                if (!isNaN(duration)) {
+                    remainingTime = duration - realTimeAudio.value.currentTime;
+                } else {
+                    // NOTE: 音声がロードされた直後でdurationが取れない場合は短いと仮定
+                    remainingTime = 0;
+                }
+            } else {
+                // NOTE: 最後のチャンクを合成リクエスト中の場合も、間もなく終わると仮定
+                remainingTime = 0;
+            }
+        }
+
+        // NOTE: 残り時間が2秒より長い（またはキューがまだ残っている）場合のみキャンセルする
+        if (remainingTime > 2.0) {
+            shouldCancelRealTime = true;
+        }
+    }
+
+    // NOTE: キャンセル条件を満たす場合、リアルタイム読み上げを即時停止・破棄する
+    if (shouldCancelRealTime) {
+        cancelRealtimeRead();
+    }
+
+    // NOTE: skipAudio は、
+    // 1. InputArea が「すべてリアルタイムに送信した(差分なし)」と判定しており、かつ
+    // 2. リアルタイム読み上げが動いていなかった、または「残り時間が少ないのでキャンセルせず最後まで任せた」場合
+    // に true になり、全体読み上げをスキップする
+    const skipAudio = skipAudioFlagFromInput && (!wasRealTimeActive || !shouldCancelRealTime);
+
     let speakerName = "Unknown";
 
     for (const s of speakers.value) {
@@ -95,6 +208,7 @@ const handleSend = async (text: string, speakerId: number) => {
         text,
         speakerId,
         speakerName,
+        autoplay: !skipAudio,
     };
 
     history.value.push(item);
@@ -132,6 +246,7 @@ const handleSend = async (text: string, speakerId: number) => {
             :speakers="speakers"
             :defaultSpeakerId="defaultSpeakerId"
             @send="handleSend"
+            @realtime-read="handleRealtimeRead"
         />
     </div>
 </template>

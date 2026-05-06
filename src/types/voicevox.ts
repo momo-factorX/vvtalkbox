@@ -29,4 +29,6 @@ export interface HistoryItem {
     audioUrl?: string;
     /** エラー */
     error?: string;
+    /** 自動再生するかどうか（デフォルトは true） */
+    autoplay?: boolean;
 }

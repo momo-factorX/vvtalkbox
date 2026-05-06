@@ -79,6 +79,10 @@ export function useVoicevox() {
             const queryJson = await queryRes.json();
             queryJson.speedScale = speedScale.value;
             queryJson.pitchScale = pitchScale.value;
+            queryJson.prePhonemeLength = 0;
+            queryJson.postPhonemeLength = 0;
+            queryJson.parseLengthScale = 0;
+            queryJson.volumeScale = 2.0; // NOTE: 音量を少し上げる
 
             // NOTE: 音声合成
             const synthRes = await fetch(`${apiUrl.value}/synthesis?speaker=${speakerId}`, {

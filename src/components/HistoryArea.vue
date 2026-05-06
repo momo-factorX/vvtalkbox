@@ -40,7 +40,7 @@ defineExpose({ scrollToBottom });
                 v-if="item.audioUrl"
                 :src="item.audioUrl"
                 controls
-                autoplay
+                :autoplay="item.autoplay !== false"
                 @ended="$emit('audio-ended', item.id)"
             ></audio>
             <div v-if="item.error" :class="$style.errorText">{{ item.error }}</div>
